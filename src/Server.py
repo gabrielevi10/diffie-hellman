@@ -1,5 +1,6 @@
 import socket
 from DiffieHellman import DiffieHellman
+import pyaes
 
 # HOST = ''              # Endereco IP do Servidor
 # PORT = 5000            # Porta que o Servidor esta
@@ -34,25 +35,31 @@ class Server:
       msg = con.recv(1024)
       while msg:
         msg = con.recv(1024)
-        print(msg)
+        message = self.__decrypt_message(msg.decode('utf8'))
+        print(message)
 
-  def __establish_session(self, con):
+  def __receive_generator_and_prime(self, con):
     generator = int(con.recv(1024))  
     prime = int(con.recv(1024))
+    return generator, prime
+  
+  def __establish_session(self, con):
+    generator, prime = self.__receive_generator_and_prime(con)
+
     diffie_hellman = DiffieHellman(generator, prime)
-
     result = diffie_hellman.get_result()
-
     result_from_client = int(con.recv(1024))
-
     con.send(bytes(str(result), 'utf8'))
-
+    
     self.__key = diffie_hellman.calculate_shared_secret(result_from_client)
-
     self.__session_estabilished = True
-
     print("Session key: " + str(self.__key))
 
+    self.__aes = pyaes.AESModeOfOperationCTR(bytes(str(self.__key), 'utf8'))
+
+  def __decrypt_message(self, message):
+    message = self.__aes.decrypt(message).decode('utf-8') 
+    return message
 
 if __name__ == "__main__":
   server = Server("", 5000)

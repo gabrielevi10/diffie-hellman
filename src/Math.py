@@ -87,7 +87,7 @@ class Math:
     return True
 
   @staticmethod
-  def generate_prime_number(bits_size : int = 1024):
+  def generate_prime_number(bits_size : int = 256):
     """
     Generates a, probably, prime number with length `bits_size` in bits. By default bits_size = 2014.
 
@@ -100,7 +100,7 @@ class Math:
     return prime # returns a probably prime
 
   @staticmethod
-  def generate_safe_prime_number(bits_size : int = 1024):
+  def generate_safe_prime_number(bits_size : int = 256):
     """
     Generates a safe prime number. A prime number p is safe is (p - 1) / 2 is a prime.
     """
@@ -129,7 +129,7 @@ class Math:
     result_queue.put((generator, safe_prime)) # save in the queue the result of the operation.
 
   @staticmethod
-  def generate_generator_and_prime(bits_size : int = 128):
+  def generate_generator_and_prime(bits_size : int = 256):
     """
     Generates a safe prime number p and the generator of Zp, Zp = (Z, * mod p)
     Returns both numbers
