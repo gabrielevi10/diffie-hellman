@@ -136,7 +136,8 @@ class Math:
     """
     q = queue.Queue()
     # threads to search for prime and generator.
-    threads = [threading.Thread(target=Math.__generate_generator_and_prime, args=(i, bits_size, q)) for i in range(os.cpu_count() // 2)]
+    threads = [threading.Thread(target=Math.__generate_generator_and_prime, 
+              args=(i, bits_size, q)) for i in range(os.cpu_count() // 2)]
 
     for thread in threads:
       thread.daemon = True

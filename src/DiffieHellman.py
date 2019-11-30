@@ -3,6 +3,7 @@
 import sys
 import secrets
 from Math import Math
+
 class DiffieHellman:
   """
   Encapsulate methods necessary to calculate the shared secret
