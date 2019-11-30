@@ -26,16 +26,17 @@ class Client:
     print("Session key: " + str(self.__key))
     
     self.__key = self.__key.to_bytes(32, byteorder = "big")
-    print(len(self.__key))
-    
-    self.__aes = pyaes.AESModeOfOperationCTR(bytes(str(self.__key), 'utf8'))
+
+    self.__aes = pyaes.AESModeOfOperationCTR(self.__key)
 
   def send_message(self, message):
     message = self.__aes.encrypt(message)
-    self.__tcp_client.send(bytes(message, 'utf8'))
+    print("Encrypted message: " + str(message))
+    self.__tcp_client.send(message)
 
 if __name__ == "__main__":
   client = Client("localhost", 5000)
   client.establish_session()
   while True:
-    msg = input("Type your message to the server: ")
+    message = input("Type your message to the server: ")
+    client.send_message(message)

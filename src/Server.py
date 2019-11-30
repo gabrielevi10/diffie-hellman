@@ -2,22 +2,6 @@ import socket
 from DiffieHellman import DiffieHellman
 import pyaes
 
-# HOST = ''              # Endereco IP do Servidor
-# PORT = 5000            # Porta que o Servidor esta
-# tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# orig = (HOST, PORT)
-# tcp.bind(orig)
-# tcp.listen(1)
-# while True:
-#     con, cliente = tcp.accept()
-#     print 'Concetado por', cliente
-#     while True:
-#         msg = con.recv(1024)
-#         if not msg: break
-#         print cliente, msg
-#     print 'Finalizando conexao do cliente', cliente
-#     con.close()
-
 class Server:
   def __init__(self, host, port):
     self.__tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,11 +16,14 @@ class Server:
       con, client = self.__tcp_server.accept()
       if not self.__session_estabilished:
         self.__establish_session(con)
-      msg = con.recv(1024)
-      while msg:
+      while True:
         msg = con.recv(1024)
-        message = self.__decrypt_message(msg.decode('utf8'))
-        print(message)
+        if not msg:
+          break
+        print("Encrypted message received: " + str(msg))
+        message = self.__decrypt_message(msg)
+        print("Decrypted message: " + message.decode('utf-8'))
+      self.__session_estabilished = False
 
   def __receive_generator_and_prime(self, con):
     generator = int(con.recv(1024))  
@@ -55,10 +42,12 @@ class Server:
     self.__session_estabilished = True
     print("Session key: " + str(self.__key))
 
-    self.__aes = pyaes.AESModeOfOperationCTR(bytes(str(self.__key), 'utf8'))
+    self.__key = self.__key.to_bytes(32, byteorder = "big")
+
+    self.__aes = pyaes.AESModeOfOperationCTR(self.__key)
 
   def __decrypt_message(self, message):
-    message = self.__aes.decrypt(message).decode('utf-8') 
+    message = self.__aes.decrypt(message) 
     return message
 
 if __name__ == "__main__":
