@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import secrets
-import random
+import queue
+import threading
+import os
 
 class Math:
   """
@@ -14,7 +16,8 @@ class Math:
     """
     Private method to generate a number with `bits_size` bits.
     """
-    number = random.getrandbits(bits_size)
+    #number = random.getrandbits(bits_size)
+    number = secrets.randbits(bits_size)
     number |= (1 << bits_size - 1) | 1     # ensures that number is odd and most significant byte is one.
     return number
 
@@ -26,6 +29,9 @@ class Math:
 
     Returns an integer, the result of the operation.
     """
+    if base == 0 and exponent == 0:
+      return None
+
     base %= prime # ensure that base is in the range of the answer.
     result = 1    # starts with one because it's the neutral element of multiplication.
 
@@ -63,7 +69,7 @@ class Math:
     
     # Miller-Rabin test
     for _ in range(tests): 
-      a = random.randrange(2, number - 1)
+      a = max(2, secrets.randbelow(number - 1))
       x = Math.fast_exponentiation(a, r, number)
 
       if x != 1 and x != number - 1:
@@ -87,8 +93,53 @@ class Math:
 
     Returns, probably, a prime.
     """
-    prime = 1 # known non prime number.
+    prime = Math.__generate_number(bits_size)
     while not Math.miller_rabin_test(prime):
-      prime = Math.__generate_number(bits_size)
-    
+      prime += 2 
+
     return prime # returns a probably prime
+
+  @staticmethod
+  def generate_safe_prime_number(bits_size : int = 1024):
+    """
+    Generates a safe prime number. A prime number p is safe is (p - 1) / 2 is a prime.
+    """
+    prime = Math.generate_prime_number(bits_size)       # gets prime number
+    while not Math.miller_rabin_test((prime - 1) // 2): # tests if (p - 1) / 2 is prime.
+      prime = Math.generate_prime_number(bits_size)     # if not, generates another prime number and retry.
+    
+    return prime
+
+  @staticmethod
+  def __generate_generator_and_prime(id : int, bits_size : int , result_queue : queue):
+    """
+    Generates a safe prime number p and the generator of Zp, Zp = (Z, * mod p)
+    Returns both numbers
+    """
+    safe_prime = Math.generate_safe_prime_number(bits_size)         # Gets a safe prime number p
+    factor = (safe_prime - 1) // 2                                  # derivate a prime from safe prime.
+
+    generator = max(2, secrets.randbelow(safe_prime - 1)) # Choose a random integer in the range [2, safe_prime - 2]
+    exponentation = Math.fast_exponentiation(generator, factor, safe_prime) 
+
+    while exponentation == 1: # Some guy in stack overflow taugth this test to me.
+      generator = max(2, secrets.randbelow(safe_prime - 1))
+      exponentation = Math.fast_exponentiation(generator, factor, safe_prime) 
+
+    result_queue.put((generator, safe_prime)) # save in the queue the result of the operation.
+
+  @staticmethod
+  def generate_generator_and_prime(bits_size : int = 128):
+    """
+    Generates a safe prime number p and the generator of Zp, Zp = (Z, * mod p)
+    Returns both numbers
+    """
+    q = queue.Queue()
+    # threads to search for prime and generator.
+    threads = [threading.Thread(target=Math.__generate_generator_and_prime, args=(i, bits_size, q)) for i in range(os.cpu_count() // 2)]
+
+    for thread in threads:
+      thread.daemon = True
+      thread.start()
+    
+    return q.get() # returns the first result of the threads
